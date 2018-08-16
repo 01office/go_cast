@@ -1,8 +1,9 @@
 package main
 
 import (
-	"net"
 	"fmt"
+	"net"
+	"strings"
 	"time"
 )
 
@@ -23,9 +24,12 @@ func main() {
 			}
 			fmt.Println("Server received:", string(data[:n]))
 
-			_, err = listener.WriteToUDP([]byte("world"), rAddr)
-			if err != nil {
-				fmt.Printf(err.Error())
+			tcpAddr := strings.Split(rAddr.String(), ":")[0] + ":9982"
+			if c, e := net.Dial("tcp", tcpAddr); e == nil {
+				defer c.Close()
+				if _, e := c.Write([]byte("world")); e != nil {
+					fmt.Println("tcp write error", e)
+				}
 			}
 		}
 	}()
@@ -42,15 +46,22 @@ func main() {
 	}
 	fmt.Println("Client listen at:", conn.LocalAddr().String())
 
-	n, err := conn.WriteToUDP([]byte("hello"), dstAddr)
+	_, err = conn.WriteToUDP([]byte("hello"), dstAddr)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	data := make([]byte, 1024)
-	n, _, err = conn.ReadFromUDP(data)
-	if err != nil {
-		fmt.Println(err)
+	tcpListen, tcpE := net.Listen("tcp", "0.0.0.0:9982")
+	if tcpE != nil {
+		fmt.Println("tcp listen error", tcpE)
 	}
-	fmt.Println("Client received:", string(data[:n]))
+	defer tcpListen.Close()
+	tcpCon, tcpCE := tcpListen.Accept()
+	if tcpCE != nil {
+		fmt.Println("tcp accept error", tcpCE)
+	}
+	buf := make([]byte, 1024)
+	if tcpn, rE := tcpCon.Read(buf); rE == nil {
+		fmt.Println("Client received:", string(buf[:tcpn]))
+	}
 }
