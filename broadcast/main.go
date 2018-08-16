@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -24,8 +23,9 @@ func main() {
 			}
 			fmt.Println("Server received:", string(data[:n]))
 
-			tcpAddr := strings.Split(rAddr.String(), ":")[0] + ":9982"
-			if c, e := net.Dial("tcp", tcpAddr); e == nil {
+			// tcpAddr := strings.Split(rAddr.String(), ":")[0] + ":9982"
+			// if c, e := net.Dial("tcp", tcpAddr); e == nil {
+			if c, e := net.Dial("tcp", rAddr.String()); e == nil {
 				defer c.Close()
 				if _, e := c.Write([]byte("world")); e != nil {
 					fmt.Println("tcp write error", e)
